@@ -227,6 +227,25 @@ def test_type_coercion():
     assert_equal("string passthrough", Driver.stringValueToTypeValue(s, "st", "hi"), "hi")
 
 
+def test_unwritten_attribute_reads_as_its_type():
+    """An attribute that was never written holds no text yet, and reading it has to answer a value of
+    its type: float("") ends the read with a conversion error, and the client asking only sees the read
+    fail. The lqr controller of demo026 read its actor attribute before it ever wrote it, and so it
+    never regulated at all."""
+    print("\n-- an attribute that was never written --")
+    s = State()
+    register(s, "b", "DevBoolean", "t,c,id=1")
+    register(s, "l", "DevLong", "t,c,id=1")
+    register(s, "d", "DevDouble", "t,c,id=1")
+    register(s, "f", "DevFloat", "t,c,id=1")
+    register(s, "st", "DevString", "t,c,id=1")
+    assert_false("boolean answers false", Driver.stringValueToTypeValue(s, "b", ""))
+    assert_equal("long answers zero", Driver.stringValueToTypeValue(s, "l", ""), 0)
+    assert_equal("double answers zero", Driver.stringValueToTypeValue(s, "d", ""), 0.0, tolerance=1e-9)
+    assert_equal("float answers zero", Driver.stringValueToTypeValue(s, "f", ""), 0.0, tolerance=1e-9)
+    assert_equal("string stays empty", Driver.stringValueToTypeValue(s, "st", ""), "")
+
+
 # ===========================================================================
 #  sqlRead / sqlWrite SQL generation + round-trip
 # ===========================================================================
@@ -333,6 +352,7 @@ def main():
     try:
         test_type_mappers()
         test_type_coercion()
+        test_unwritten_attribute_reads_as_its_type()
         test_sqlwrite_builds_update()
         test_sqlread_builds_select_and_reads()
         test_sqlread_empty_when_absent()
